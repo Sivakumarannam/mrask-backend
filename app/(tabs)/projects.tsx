@@ -1,11 +1,25 @@
+import { ActivityIndicator, Text } from 'react-native';
+
 import { ProjectCard } from '@/components/ProjectCard';
 import { Heading, Screen } from '@/components/ui';
-import { projects } from '@/data/projects';
+import { useTheme } from '@/constants/theme';
+import { useProjects } from '@/lib/useProjects';
 
 export default function Projects() {
+  const t = useTheme();
+  const { projects, loading, source } = useProjects();
+
   return (
     <Screen>
-      <Heading sub="Every project here was designed, built and tested by me alone">Projects</Heading>
+      <Heading sub="Explore the products I have built, with the code, architecture, and demos behind each one.">
+        Projects
+      </Heading>
+      {source === 'api' ? (
+        <Text style={{ color: t.accent2, fontWeight: '700', marginBottom: 14 }}>
+          {'\u25CF  Live data from my Django + PostgreSQL API'}
+        </Text>
+      ) : null}
+      {loading ? <ActivityIndicator color={t.accent} style={{ marginVertical: 20 }} /> : null}
       {projects.map((p) => (
         <ProjectCard key={p.id} p={p} />
       ))}

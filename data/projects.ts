@@ -1,4 +1,5 @@
-// Add a new project by adding one object to this list.
+// Fallback project data. When the Django API is running, projects are loaded from
+// PostgreSQL instead (see lib/api.ts). Keep this list in sync with the seed command.
 
 export type Project = {
   id: string;
@@ -8,8 +9,10 @@ export type Project = {
   summary: string;
   highlights: string[];
   stack: string[];
+  steps: string[];
   github: string;
-  demo?: string;
+  demoUrl?: string;
+  demoKind?: 'weather' | 'rag' | '';
 };
 
 export const projects: Project[] = [
@@ -28,17 +31,40 @@ export const projects: Project[] = [
       'Simple Streamlit chat interface',
     ],
     stack: ['Python', 'LangChain', 'FAISS', 'Ollama', 'Qwen2.5', 'Streamlit'],
+    steps: [
+      'Upload a PDF',
+      'Extract the text',
+      'Split into chunks',
+      'Create embeddings',
+      'Store vectors in FAISS',
+      'Retrieve relevant chunks',
+      'Qwen2.5 writes the answer',
+    ],
     github: 'https://github.com/Sivakumarannam/rag-chatbot-langchain-ollama',
+    demoKind: 'rag',
   },
   {
-    // TODO: update the description, highlights and stack to match your weather app.
     id: 'weather-app',
     title: 'Weather App',
     tagline: 'Live weather information from a weather API',
     role: 'Solo project',
-    summary: 'A weather application that fetches live weather data from a weather API.',
-    highlights: ['Fetches current weather data from an API'],
-    stack: ['Weather API'],
+    summary:
+      'A weather application that fetches live weather data from a weather API. The live demo on its page runs through this portfolio\'s own Django API.',
+    highlights: [
+      'Fetches current weather and a 5-day forecast for any city',
+      'Python / Django API cleans the data into simple JSON',
+      'Works on web, Android and iOS from one codebase',
+    ],
+    stack: ['Python', 'Django', 'REST API', 'Open-Meteo', 'React Native'],
+    steps: [
+      'You enter a city',
+      'Django API receives the request',
+      'Geocoding finds the coordinates',
+      'Weather API returns the forecast',
+      'API cleans it into simple JSON',
+      'The app shows the result',
+    ],
     github: 'https://github.com/Sivakumarannam/weather_API_Backup',
+    demoKind: 'weather',
   },
 ];

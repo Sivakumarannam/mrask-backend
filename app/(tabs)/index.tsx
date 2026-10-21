@@ -1,72 +1,97 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { ProjectCard } from '@/components/ProjectCard';
-import { Button, Chip, Heading, Screen, openLink } from '@/components/ui';
-import { useTheme } from '@/constants/theme';
+import { Button, Card, Chip, Heading, Screen, Stat, Typewriter } from '@/components/ui';
+import { gradient, useTheme } from '@/constants/theme';
 import { profile, skillGroups } from '@/data/profile';
-import { projects } from '@/data/projects';
+import { openGmail, openLink } from '@/lib/links';
+import { useProjects } from '@/lib/useProjects';
 
 export default function Home() {
   const t = useTheme();
   const router = useRouter();
+  const { projects, loading } = useProjects();
 
   return (
     <Screen>
-      <View style={{ paddingTop: 32 }}>
+      <View style={{ paddingTop: 8 }}>
         <View
           style={{
-            alignSelf: 'flex-start',
-            backgroundColor: t.chip,
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            borderRadius: 999,
+            backgroundColor: t.card,
+            borderColor: t.border,
+            borderWidth: 1,
+            borderRadius: 24,
+            padding: 22,
+            overflow: 'hidden',
           }}>
-          <Text style={{ color: t.chipText, fontWeight: '700', fontSize: 13 }}>
-            {'\u25CF  ' + profile.openTo}
+          <Text style={{ color: t.muted, fontSize: 18, fontWeight: '600', marginTop: 6 }}>
+            Hello, I am
           </Text>
-        </View>
+          <Text style={{ color: t.text, fontSize: 42, fontWeight: '800', lineHeight: 48, letterSpacing: -1.0 }}>
+            {profile.name}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
+            <Text style={{ color: t.text, fontSize: 22, fontWeight: '700' }}>I build </Text>
+            <Typewriter
+              words={profile.roles}
+              style={{ color: t.accent, fontSize: 22, fontWeight: '800' }}
+            />
+          </View>
 
-        <Text style={{ color: t.text, fontSize: 40, fontWeight: '800', marginTop: 16 }}>
-          {"Hi, I'm " + profile.name}
-        </Text>
-        <Text style={{ color: t.accent, fontSize: 22, fontWeight: '700', marginTop: 6 }}>
-          {profile.title}
-        </Text>
-        <Text style={{ color: t.muted, fontSize: 17, lineHeight: 26, marginTop: 14 }}>
-          {profile.summary}
-        </Text>
+          <Text style={{ color: t.muted, fontSize: 16, lineHeight: 26, marginTop: 16, maxWidth: 680 }}>
+            {profile.summary}
+          </Text>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 20 }}>
-          <Button
-            label="Email me"
-            onPress={() => openLink('mailto:' + profile.email)}
-          />
-          <Button
-            label="View projects"
-            variant="secondary"
-            onPress={() => router.push('/projects')}
-          />
-          <Button label="GitHub" variant="secondary" onPress={() => openLink(profile.github)} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
+            <Button label="Email me" onPress={() => openGmail()} />
+            <Button label="Explore projects" variant="secondary" onPress={() => router.push('/projects')} />
+            <Button label="GitHub" variant="secondary" onPress={() => openLink(profile.github)} />
+          </View>
         </View>
       </View>
 
-      <Heading sub="Technologies I have worked with">Skills</Heading>
-      {skillGroups.map((g) => (
-        <View key={g.title} style={{ marginBottom: 14 }}>
-          <Text style={{ color: t.text, fontWeight: '700', marginBottom: 8 }}>{g.title}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {g.items.map((s) => (
-              <Chip key={s} label={s} />
-            ))}
-          </View>
-        </View>
-      ))}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 28 }}>
+        <Stat value={String(projects.length)} label="Solo projects" />
+        <Stat value="3" label="Platforms" />
+        <Stat value="Python" label="Django + Postgres" />
+      </View>
 
-      <Heading sub="Built end to end by me">Featured projects</Heading>
+      <Heading sub="Tools and technologies I use to deliver complete products">Skills</Heading>
+      <Card accent>
+        {skillGroups.map((g, idx) => (
+          <View key={g.title} style={{ marginBottom: idx === skillGroups.length - 1 ? 0 : 16 }}>
+            <Text style={{ color: t.text, fontWeight: '800', marginBottom: 8 }}>{g.title}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {g.items.map((s) => (
+                <Chip key={s} label={s} />
+              ))}
+            </View>
+          </View>
+        ))}
+      </Card>
+
+      <Heading sub="Built from idea to launch by me, with real product logic behind each one">Featured projects</Heading>
+      {loading ? <ActivityIndicator color={t.accent} style={{ marginVertical: 20 }} /> : null}
       {projects.map((p) => (
         <ProjectCard key={p.id} p={p} />
       ))}
+
+      <LinearGradient
+        colors={gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: 18, padding: 20, marginTop: 18 }}>
+        <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '800' }}>Want to work together?</Text>
+        <Text style={{ color: '#EEF4FF', fontSize: 15, marginTop: 6, marginBottom: 16 }}>
+          I would love to hear about your team, product, or next challenge.
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          <Button label="Get in touch" variant="secondary" onPress={() => router.push('/contact')} />
+          <Button label="Email me" variant="secondary" onPress={() => openGmail()} />
+        </View>
+      </LinearGradient>
     </Screen>
   );
 }

@@ -2,8 +2,16 @@
 
 export const profile = {
   name: 'Siva Kumar Annam',
+  displayName: 'Mr.A.S.K',
+  shortName: 'Mr.A.S.K',
   title: 'Full-Stack Developer',
   openTo: 'Open to full-stack developer opportunities',
+  roles: [
+    'full-stack web apps',
+    'AI chatbots with RAG',
+    'Python and Django APIs',
+    'apps for web, Android and iOS',
+  ],
   summary:
     'I build web and AI-powered applications end to end. I enjoy learning new tools and turning ideas into working projects, and every project in this portfolio was designed, built and tested by me alone.',
   location: 'Andhra Pradesh, India',
@@ -14,20 +22,7 @@ export const profile = {
 
 export const skillGroups: { title: string; items: string[] }[] = [
   { title: 'Frontend', items: ['HTML', 'CSS', 'JavaScript', 'Bootstrap', 'React Native (Expo)'] },
-  { title: 'Backend', items: ['PHP', 'Python'] },
+  { title: 'Backend', items: ['Python', 'Django', 'REST APIs', 'PostgreSQL', 'PHP'] },
   { title: 'AI / LLM', items: ['RAG', 'LangChain', 'Ollama', 'FAISS', 'Streamlit'] },
   { title: 'Tools', items: ['Git', 'GitHub'] },
 ];
-
-export const experience = [
-  {
-    role: 'Full-Stack Web Developer Intern',
-    org: 'Innomatics Research Labs',
-    note: 'Internship working on full-stack web development.',
-  },
-];
-
-export const education = {
-  degree: 'B.Tech, Computer Science and Engineering',
-  school: "St. Mary's Group of Institutions, Guntur",
-};
