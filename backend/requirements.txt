@@ -6,4 +6,8 @@ requests>=2.32,<3
 whitenoise>=6.7,<7
 psycopg2-binary>=2.9,<3
 pypdf>=5.0,<6
+<<<<<<< HEAD
 gunicorn>=22.0,<23
+=======
+gunicorn>=22.0,<23
+>>>>>>> 411bf8042835f8e2d12086b3a2dda734e7c1703d
