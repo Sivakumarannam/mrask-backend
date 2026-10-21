@@ -3,17 +3,29 @@ import re
 from functools import lru_cache
 from io import BytesIO
 
-import faiss
-import numpy as np
 import requests
 from django.core.mail import send_mail
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 from rest_framework import generics, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+
+try:
+    import faiss  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - optional for RAG-only features
+    faiss = None
+
+try:
+    import numpy as np
+except ModuleNotFoundError:  # pragma: no cover - optional for RAG-only features
+    np = None
+
+try:
+    from sentence_transformers import SentenceTransformer
+except ModuleNotFoundError:  # pragma: no cover - optional for RAG-only features
+    SentenceTransformer = None
 
 from .models import Project
 from .serializers import ContactMessageSerializer, ProjectSerializer
@@ -110,28 +122,36 @@ def split_into_chunks(text, chunk_size=220, overlap=40):
 
 @lru_cache(maxsize=1)
 def _get_embed_model():
+    if SentenceTransformer is None:
+        raise ModuleNotFoundError('sentence-transformers is not installed')
     model_name = os.environ.get('RAG_EMBED_MODEL', 'sentence-transformers/all-MiniLM-L6-v2')
     return SentenceTransformer(model_name)
 
 
 def _build_semantic_context(question, chunks):
-    model = _get_embed_model()
-    chunks_with_query = [question, *chunks]
-    embeddings = model.encode(chunks_with_query, convert_to_numpy=True)
-    query_vector = embeddings[0]
-    chunk_vectors = embeddings[1:]
-    norms = np.linalg.norm(chunk_vectors, axis=1) * np.linalg.norm(query_vector)
-    sims = np.divide(
-        np.dot(chunk_vectors, query_vector),
-        norms,
-        out=np.zeros_like(np.dot(chunk_vectors, query_vector)),
-        where=(norms != 0),
-    )
-    ranked_indices = np.argsort(sims)[::-1]
-    selected = [chunks[idx] for idx in ranked_indices[:3] if sims[idx] > 0.0]
-    if not selected:
+    if np is None or SentenceTransformer is None:
         return chunks[:3]
-    return selected
+
+    try:
+        model = _get_embed_model()
+        chunks_with_query = [question, *chunks]
+        embeddings = model.encode(chunks_with_query, convert_to_numpy=True)
+        query_vector = embeddings[0]
+        chunk_vectors = embeddings[1:]
+        norms = np.linalg.norm(chunk_vectors, axis=1) * np.linalg.norm(query_vector)
+        sims = np.divide(
+            np.dot(chunk_vectors, query_vector),
+            norms,
+            out=np.zeros_like(np.dot(chunk_vectors, query_vector)),
+            where=(norms != 0),
+        )
+        ranked_indices = np.argsort(sims)[::-1]
+        selected = [chunks[idx] for idx in ranked_indices[:3] if sims[idx] > 0.0]
+        if not selected:
+            return chunks[:3]
+        return selected
+    except Exception:
+        return chunks[:3]
 
 
 OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
