@@ -108,11 +108,19 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+WHITENOISE_AUTOREFRESH = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- API / CORS ---
+# Allow all origins in debug (dev), otherwise use the env var
+# Also include Vercel URLs as a hardcoded fallback for when env var is missing
+_VERCEL_ORIGINS = [
+    'https://mrask-frontend.vercel.app',
+    'https://mrask-frontend-git-main-yt-studio11.vercel.app',
+]
 CORS_ALLOW_ALL_ORIGINS = DEBUG
-CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS')
+_cors_from_env = env_list('CORS_ALLOWED_ORIGINS')
+CORS_ALLOWED_ORIGINS = list(set(_cors_from_env + (_VERCEL_ORIGINS if not DEBUG else [])))
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
