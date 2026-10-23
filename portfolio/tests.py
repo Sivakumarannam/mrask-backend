@@ -117,3 +117,29 @@ class PortfolioAPITests(TestCase):
         self.assertIn('data:', content)
         self.assertIn('"type": "done"', content)
 
+    def test_copilot_chat_endpoint(self):
+        response = self.client.post(
+            '/api/copilot/chat/',
+            {'message': 'What is Siva\'s tech stack?'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('answer', data)
+        self.assertIn('suggestions', data)
+        self.assertIn('author', data)
+        self.assertIn('Django', data['answer'])
+
+    def test_copilot_stream_endpoint(self):
+        response = self.client.post(
+            '/api/copilot/stream/',
+            {'message': 'Tell me how to contact him'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/event-stream')
+        content = b''.join(response.streaming_content).decode('utf-8')
+        self.assertIn('data:', content)
+        self.assertIn('"type": "start"', content)
+        self.assertIn('"type": "done"', content)
+

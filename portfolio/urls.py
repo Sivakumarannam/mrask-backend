@@ -12,4 +12,6 @@ urlpatterns = [
     path('weather/', views.WeatherView.as_view()),
     path('rag/ask/', views.RAGAskView.as_view()),
     path('rag/stream/', views.RAGStreamView.as_view()),
+    path('copilot/chat/', views.CopilotChatView.as_view()),
+    path('copilot/stream/', views.CopilotStreamView.as_view()),
 ]

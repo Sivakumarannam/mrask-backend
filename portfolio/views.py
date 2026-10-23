@@ -586,6 +586,172 @@ class APIDocsView(APIView):
                     'description': 'Upload PDF/text document and ask questions with local LLM grounded context',
                     'payload': {'file': 'binary PDF/txt', 'question': 'string'},
                 },
+                {
+                    'path': f'{base}/api/copilot/chat/',
+                    'method': 'POST (JSON)',
+                    'description': 'AI portfolio assistant answering questions about Siva Kumar Annam (Mr.A.S.K)',
+                    'payload': {'message': 'string', 'history': 'optional array of {role, content}'},
+                },
+                {
+                    'path': f'{base}/api/copilot/stream/',
+                    'method': 'POST (JSON)',
+                    'description': 'Real-time SSE token stream for portfolio AI co-pilot',
+                    'payload': {'message': 'string', 'history': 'optional array of {role, content}'},
+                },
             ]
         })
+
+
+# ─── Portfolio AI Co-Pilot Knowledge & Handlers ────────────────────────────
+COPILOT_PROFILE = {
+    'name': 'Siva Kumar Annam',
+    'handle': 'Mr.A.S.K',
+    'title': 'Full-Stack Developer & AI Systems Engineer',
+    'location': 'Andhra Pradesh, India',
+    'email': 'sivakumarannam143@gmail.com',
+    'github': 'https://github.com/Sivakumarannam',
+    'linkedin': 'https://www.linkedin.com/in/siva-kumar-annam-5b0368203/',
+    'portfolio': 'https://mrask-frontend.vercel.app',
+    'open_to': 'Open to full-stack, Python/Django, React Native, and AI engineer opportunities',
+}
+
+COPILOT_KNOWLEDGE_BASE = """
+Siva Kumar Annam (Mr.A.S.K) is a Full-Stack Developer and AI Systems Engineer from Andhra Pradesh, India.
+Contact:
+- Email: sivakumarannam143@gmail.com
+- GitHub: https://github.com/Sivakumarannam
+- LinkedIn: https://www.linkedin.com/in/siva-kumar-annam-5b0368203/
+- Portfolio: https://mrask-frontend.vercel.app
+
+Technical Competencies:
+1. Frontend: React Native (Expo SDK 57), React Native Web, TypeScript, JavaScript (ES6+), HTML5, CSS3, Bootstrap, glassmorphic dark/light UI, persistent local theming.
+2. Backend: Python, Django 6.1, Django REST Framework, PostgreSQL with pgvector, SQLite, Gunicorn, WhiteNoise, REST APIs, asynchronous daemon email threads (<170ms response).
+3. AI / LLM & RAG: Retrieval-Augmented Generation (RAG), Ollama (Qwen2.5 local inference), Sentence-Transformers (all-MiniLM-L6-v2), FAISS dense vector search, pgvector cosine similarity, real-time Server-Sent Events (SSE) token streaming, PyPDF semantic chunking.
+4. DevOps: Docker containerization, Render Cloud, Vercel, GitHub Actions CI/CD automation.
+
+Core Projects:
+1. RAG Chatbot: Local on-premise document Q&A assistant using Sentence-Transformers, FAISS vector indexing, and local Ollama Qwen2.5. Guarantees 100% data privacy with zero cloud leak.
+2. Weather App: Microservice architecture connecting Django REST backend to Open-Meteo geocoding and live 5-day forecasts, rendered across Web, Android, and iOS.
+3. Portfolio Expo: Full-stack portfolio application with dark/light themes, honeypot spam protection, instant async email delivery, and automated testing.
+"""
+
+def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
+    """Generates an intelligent, grounded response for the portfolio AI co-pilot with follow-up chips."""
+    q = message.lower().strip()
+
+    # 1. Contact / Hire / Availability
+    if any(k in q for k in ['contact', 'email', 'hire', 'reach', 'connect', 'linkedin', 'github', 'phone', 'call', 'message']):
+        answer = (
+            f"You can reach **{COPILOT_PROFILE['name']} ({COPILOT_PROFILE['handle']})** directly:\n\n"
+            f"- 📧 **Email:** [{COPILOT_PROFILE['email']}](mailto:{COPILOT_PROFILE['email']})\n"
+            f"- 💼 **LinkedIn:** [Siva Kumar Annam on LinkedIn]({COPILOT_PROFILE['linkedin']})\n"
+            f"- 🐙 **GitHub:** [@Sivakumarannam]({COPILOT_PROFILE['github']})\n"
+            f"- 📍 **Location:** {COPILOT_PROFILE['location']}\n\n"
+            f"He is actively **{COPILOT_PROFILE['open_to']}**."
+        )
+        suggestions = ['What is his tech stack?', 'Tell me about the RAG Chatbot', 'Show all projects']
+        return answer, suggestions
+
+    # 2. Skills / Tech Stack
+    if any(k in q for k in ['skill', 'stack', 'tech', 'technolog', 'language', 'framework', 'python', 'django', 'react', 'frontend', 'backend']):
+        answer = (
+            f"**{COPILOT_PROFILE['name']}** specializes in end-to-end full-stack and AI development:\n\n"
+            "• **Frontend:** React Native (Expo SDK 57), React Native Web, TypeScript, JavaScript (ES6+), HTML5, CSS3, Bootstrap.\n"
+            "• **Backend:** Python, Django 6.1, Django REST Framework, PostgreSQL, SQLite, Gunicorn, WhiteNoise, Async background workers.\n"
+            "• **AI / LLM & RAG:** Local LLM inference (Ollama / Qwen2.5), Sentence-Transformers, FAISS vector indexing, PostgreSQL pgvector, real-time SSE token streaming.\n"
+            "• **DevOps & Cloud:** Docker, Vercel (Frontend), Render (Backend & DB), GitHub Actions CI/CD."
+        )
+        suggestions = ['How does his RAG Chatbot work?', 'Explain the Weather App architecture', 'How do I contact him?']
+        return answer, suggestions
+
+    # 3. RAG Chatbot Project
+    if any(k in q for k in ['rag', 'chatbot', 'ollama', 'faiss', 'pdf', 'document', 'vector', 'qwen', 'embed']):
+        answer = (
+            "**RAG Chatbot** is Siva's on-premise Retrieval-Augmented Generation project:\n\n"
+            "1. **Document Ingestion:** Ingests PDF / Text documents and extracts content using `pypdf`.\n"
+            "2. **Semantic Chunking:** Splits text into 500-token chunks with context overlap.\n"
+            "3. **Dense Embeddings:** Embeds chunks using `sentence-transformers/all-MiniLM-L6-v2`.\n"
+            "4. **Vector Retrieval:** Indexes vectors in FAISS (and PostgreSQL `pgvector`) for sub-second cosine similarity search.\n"
+            "5. **Local Reasoning:** Uses local Ollama (Qwen2.5) with real-time SSE token streaming, ensuring 100% data privacy with zero cloud leak.\n\n"
+            "You can test it live under `/project/rag-chatbot`!"
+        )
+        suggestions = ['Tell me about the Weather App', 'What is his experience with Django?', 'How do I hire Siva?']
+        return answer, suggestions
+
+    # 4. Weather App Project
+    if any(k in q for k in ['weather', 'meteo', 'forecast', 'api/weather']):
+        answer = (
+            "**Weather App** is a full-stack microservice demonstration:\n\n"
+            "• **Backend API:** Custom Django REST service (`/api/weather/`) resolving geocoding coordinates and aggregating meteorological data from Open-Meteo.\n"
+            "• **Frontend Client:** React Native Web interface with animated weather cards, temperature conversions, and 5-day forecasts.\n"
+            "• **Resilience:** Features intelligent city normalization, rate limiting, and cached weather code descriptions.\n\n"
+            "You can test it live under `/project/weather-app`!"
+        )
+        suggestions = ['How does the RAG Chatbot work?', 'What is his full tech stack?', 'How do I contact him?']
+        return answer, suggestions
+
+    # 5. Experience / Summary / Who is he
+    if any(k in q for k in ['who', 'about', 'experience', 'background', 'intro', 'summary', 'bio', 'resume', 'cv']):
+        answer = (
+            f"**{COPILOT_PROFILE['name']} ({COPILOT_PROFILE['handle']})** is a Full-Stack Developer and AI Systems Engineer based in {COPILOT_PROFILE['location']}.\n\n"
+            "He designs, builds, and deploys scalable web applications, mobile interfaces, and AI microservices independently. "
+            "His flagship works include an on-premise RAG system powered by local Ollama & FAISS, a real-time weather microservice, "
+            "and this production multi-platform Expo portfolio.\n\n"
+            f"He is currently **{COPILOT_PROFILE['open_to']}**."
+        )
+        suggestions = ['What are his top skills?', 'Tell me about the RAG Chatbot', 'Get his contact info']
+        return answer, suggestions
+
+    # Default / Generic
+    answer = (
+        f"I am **Mr.A.S.K's AI Portfolio Co-Pilot**! I can answer anything about {COPILOT_PROFILE['name']}'s "
+        f"engineering background, tech stack, projects, and availability.\n\n"
+        "Feel free to ask about:\n"
+        "• His **Python / Django** and **React Native** projects\n"
+        "• How his **RAG Chatbot** and **FAISS vector pipeline** work\n"
+        f"• How to **schedule an interview or contact him** at {COPILOT_PROFILE['email']}"
+    )
+    suggestions = ['What is his tech stack?', 'Tell me about the RAG Chatbot', 'How do I contact him?']
+    return answer, suggestions
+
+
+class CopilotChatView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'weather'
+
+    def post(self, request):
+        message = (request.data.get('message') or '').strip()
+        if not message:
+            return Response({'detail': 'Please provide a message.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        answer, suggestions = generate_copilot_answer(message)
+        return Response({
+            'answer': answer,
+            'suggestions': suggestions,
+            'author': COPILOT_PROFILE['name'],
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+        })
+
+
+class CopilotStreamView(APIView):
+    def post(self, request):
+        message = (request.data.get('message') or '').strip()
+        if not message:
+            return Response({'detail': 'Please provide a message.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        answer, suggestions = generate_copilot_answer(message)
+
+        def event_stream():
+            yield f"data: {json.dumps({'type': 'start', 'suggestions': suggestions})}\n\n"
+            words = answer.split(' ')
+            for idx, word in enumerate(words):
+                token = word + (' ' if idx < len(words) - 1 else '')
+                yield f"data: {json.dumps({'type': 'token', 'token': token})}\n\n"
+                time.sleep(0.015)
+            yield f"data: {json.dumps({'type': 'done', 'suggestions': suggestions})}\n\n"
+
+        response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'
+        return response
 
