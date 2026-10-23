@@ -121,6 +121,9 @@ _VERCEL_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 _cors_from_env = env_list('CORS_ALLOWED_ORIGINS')
 CORS_ALLOWED_ORIGINS = list(set(_cors_from_env + (_VERCEL_ORIGINS if not DEBUG else [])))
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/.*\.vercel\.app$",
+]
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')

@@ -221,7 +221,7 @@ def _generate_with_ollama(question, chunks, full_text=''):
                 'stream': False,
                 'options': {'temperature': 0.2},
             },
-            timeout=90,
+            timeout=(1.0, 4.0),
         )
         response.raise_for_status()
         payload = response.json()
@@ -408,6 +408,8 @@ class WeatherView(APIView):
 
 
 class RAGAskView(APIView):
+    permission_classes = ()
+    throttle_classes = ()
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request):
@@ -444,6 +446,8 @@ class RAGAskView(APIView):
 
 
 class RAGStreamView(APIView):
+    permission_classes = ()
+    throttle_classes = ()
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request):
@@ -485,7 +489,7 @@ class RAGStreamView(APIView):
                     f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate",
                     json={'model': model_name, 'prompt': prompt, 'stream': True, 'options': {'temperature': 0.2}},
                     stream=True,
-                    timeout=90,
+                    timeout=(1.0, 4.0),
                 ) as r:
                     if r.status_code == 200:
                         for line in r.iter_lines():
@@ -734,6 +738,9 @@ class CopilotChatView(APIView):
 
 
 class CopilotStreamView(APIView):
+    permission_classes = ()
+    throttle_classes = ()
+
     def post(self, request):
         message = (request.data.get('message') or '').strip()
         if not message:
