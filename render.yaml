@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: mrask-backend
+    env: python
+    buildCommand: pip install -r requirements.txt && python manage.py migrate
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://mrask-frontend.vercel.app,http://localhost:8081"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mrask-db
+          property: connectionString
+
+databases:
+  - name: mrask-db
+    plan: free
+    postgresMajorVersion: 16
