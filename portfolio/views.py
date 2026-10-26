@@ -299,8 +299,40 @@ class ProjectDetail(generics.RetrieveAPIView):
     lookup_field = 'slug'
 
 
+def _send_via_resend(instance, recipient, subject, html_body, plain_body):
+    """Dispatch email via Resend HTTPS REST API (Port 443) — never blocked by Render's firewall."""
+    resend_key = os.environ.get('RESEND_API_KEY', '').strip()
+    if not resend_key:
+        return False
+    try:
+        from_sender = os.environ.get('RESEND_FROM_EMAIL', 'Portfolio <onboarding@resend.dev>').strip()
+        resp = requests.post(
+            'https://api.resend.com/emails',
+            headers={
+                'Authorization': f'Bearer {resend_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'from': from_sender,
+                'to': [recipient],
+                'reply_to': instance.email,
+                'subject': subject,
+                'html': html_body,
+                'text': plain_body,
+            },
+            timeout=10,
+        )
+        if resp.status_code in (200, 201):
+            logger.info('Email delivered via Resend HTTPS API for contact message %s to %s', instance.pk, recipient)
+            return True
+        logger.warning('Resend HTTPS API returned status %s: %s', resp.status_code, resp.text)
+    except Exception as exc:
+        logger.exception('Resend HTTPS API dispatch failed: %s', exc)
+    return False
+
+
 def _do_send_email(instance):
-    """Internal: performs the actual SMTP call — runs in a background thread."""
+    """Internal: performs email dispatch in a background thread."""
     recipient = os.environ.get('CONTACT_EMAIL_TO', 'sivakumarannam143@gmail.com').strip()
     smtp_account = (
         os.environ.get('EMAIL_HOST_USER', '').strip()
@@ -335,7 +367,7 @@ def _do_send_email(instance):
   <div style="max-width: 600px; margin: 0 auto; background: #111827; border: 1px solid #3b82f6; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
     <div style="background: linear-gradient(135deg, #1e3a8a, #2563eb); padding: 18px 24px;">
       <h2 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800;">🚀 New Portfolio Message Received</h2>
-      <p style="margin: 4px 0 0 0; color: #bfdbfe; font-size: 13px;">Inquiry #{instance.pk} • Delivered via Gmail SMTP</p>
+      <p style="margin: 4px 0 0 0; color: #bfdbfe; font-size: 13px;">Inquiry #{instance.pk} • Delivered via Portfolio Dispatch</p>
     </div>
     <div style="padding: 24px;">
       <div style="background: #1f2937; border-radius: 8px; padding: 16px; margin-bottom: 20px; border-left: 4px solid #60a5fa;">
@@ -357,6 +389,11 @@ def _do_send_email(instance):
 </body>
 </html>"""
 
+    # 1. Prefer Resend HTTPS REST API (Port 443) — completely bypasses Render Free Tier outbound SMTP port 587 block
+    if _send_via_resend(instance, recipient, subject, html_body, plain_body):
+        return
+
+    # 2. Fall back to standard SMTP (works when deployed on paid Render instances, VPS, or local development)
     try:
         email = EmailMessage(
             subject=subject,
@@ -374,16 +411,21 @@ def _do_send_email(instance):
         email.content_subtype = 'html'
         sent = email.send(fail_silently=False) == 1
         if sent:
-            logger.info('Email delivered for contact message %s to %s with subject "%s"', instance.pk, recipient, subject)
+            logger.info('Email delivered via SMTP for contact message %s to %s with subject "%s"', instance.pk, recipient, subject)
         else:
             logger.warning('Email.send() returned 0 for contact message %s', instance.pk)
     except (BadHeaderError, OSError, smtplib.SMTPException) as exc:
-        logger.exception('Async email delivery failed for contact message %s: %s', instance.pk, exc)
+        logger.warning(
+            'SMTP delivery failed for contact message %s (%s). '
+            'Note: Render Free Tier blocks outbound TCP ports 25, 465, and 587 ([Errno 101] Network is unreachable). '
+            'To enable automated background email delivery on Render Free Tier, add RESEND_API_KEY (free HTTPS API) to Render environment variables.',
+            instance.pk, exc
+        )
 
 
 def send_contact_email_async(instance):
     """Fire-and-forget: dispatch email in a daemon thread so the API
-    returns immediately without blocking on Gmail SMTP (3–8 s)."""
+    returns immediately without blocking (<200 ms)."""
     thread = threading.Thread(
         target=_do_send_email,
         args=(instance,),
@@ -416,7 +458,8 @@ class ContactCreate(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
 
-        # Check if Gmail SMTP credentials are configured on Render
+        # Check if email credentials are configured (either Resend HTTPS API or Gmail SMTP)
+        resend_key = os.environ.get('RESEND_API_KEY', '').strip()
         smtp_user = (
             os.environ.get('EMAIL_HOST_USER', '').strip()
             or os.environ.get('DEFAULT_FROM_EMAIL', '').strip()
@@ -424,14 +467,14 @@ class ContactCreate(generics.CreateAPIView):
             or 'sivakumarannam143@gmail.com'
         )
         smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '').strip()
-        smtp_configured = bool(smtp_user and smtp_pass)
+        email_configured = bool(resend_key or (smtp_user and smtp_pass))
 
-        if smtp_configured:
+        if email_configured:
             # Fire email in background — API returns instantly (<200 ms)
             send_contact_email_async(instance)
             return Response(
                 {
-                    'detail': 'Your message was saved to the database and queued for Gmail SMTP delivery.',
+                    'detail': 'Your message was saved to the database and queued for email delivery.',
                     'email_sent': True,
                     'database_saved': True,
                     'id': instance.id,
