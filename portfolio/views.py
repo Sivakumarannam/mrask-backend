@@ -366,16 +366,34 @@ class ContactCreate(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
 
-        # Fire email in background — API returns instantly (<200 ms)
-        send_contact_email_async(instance)
+        # Check if Gmail SMTP credentials are configured on Render
+        smtp_user = os.environ.get('EMAIL_HOST_USER', '').strip()
+        smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
+        smtp_configured = bool(smtp_user and smtp_pass)
 
-        return Response(
-            {
-                'detail': 'Your message was received.',
-                'email_sent': True,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        if smtp_configured:
+            # Fire email in background — API returns instantly (<200 ms)
+            send_contact_email_async(instance)
+            return Response(
+                {
+                    'detail': 'Your message was saved to the database and queued for Gmail SMTP delivery.',
+                    'email_sent': True,
+                    'database_saved': True,
+                    'id': instance.id,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            logger.info('Contact message %s saved to DB (EMAIL_HOST_USER/PASSWORD not set on Render)', instance.pk)
+            return Response(
+                {
+                    'detail': 'Your message was saved securely to the database. Gmail SMTP relay is pending environment configuration on Render.',
+                    'email_sent': False,
+                    'database_saved': True,
+                    'id': instance.id,
+                },
+                status=status.HTTP_201_CREATED,
+            )
 
 
 class WeatherView(APIView):
@@ -692,7 +710,113 @@ def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
     """Generates an intelligent, grounded response for the portfolio AI co-pilot with follow-up chips."""
     q = message.lower().strip()
 
-    # 1. Contact / Hire / Availability
+    # 1. APIs Used & Rate Limits
+    if any(k in q for k in ['api', 'apis', 'endpoint', 'endpoints', 'urls', 'services', 'microservice', 'route', 'routes']):
+        if any(k in q for k in ['rate', 'limit', 'limits', 'throttle', 'throttling', 'quota']):
+            answer = (
+                "**Production APIs & Rate Limiting Architecture** for this portfolio:\n\n"
+                "1. **Rate Limiting Policies (Django REST Framework `ScopedRateThrottle`):**\n"
+                "• `/api/contact/`: **5 requests/minute** (Strict anti-spam & honeypot protection for email submission).\n"
+                "• `/api/weather/`: **30 requests/minute** (Upstream Open-Meteo proxy protection).\n"
+                "• `/api/rag/ask/` & `/api/rag/stream/`: **30 requests/minute** (Vector search & dense embeddings compute protection).\n"
+                "• `/api/copilot/chat/` & `/api/copilot/stream/`: **30 requests/minute** (LLM inference streaming protection).\n"
+                "• General endpoints (`/api/projects/`, `/api/health/`): **60 requests/minute** per IP with burst dampening.\n\n"
+                "2. **Core Production Endpoints in this System:**\n"
+                "• `GET /api/projects/` — Live PostgreSQL project catalog with stack filtering.\n"
+                "• `GET /api/health/` — Real-time PostgreSQL database connectivity & uptime health ping.\n"
+                "• `GET /api/status/` — Edge latency diagnostic measuring Vercel, Render & DB roundtrips.\n"
+                "• `GET /api/weather/?city={city}` — Geocoding coordinates & 5-day meteorological forecasts.\n"
+                "• `POST /api/rag/stream/` — Multipart document upload, dense vector indexing & real-time SSE streaming.\n"
+                "• `POST /api/copilot/stream/` — AI portfolio assistant with interactive token streaming.\n"
+                "• `POST /api/contact/` — Honeypot-shielded contact form with PostgreSQL storage & async Gmail SMTP."
+            )
+            suggestions = ['How does the RAG pipeline work?', 'What is his full tech stack?', 'How do I hire Siva?']
+            return answer, suggestions
+
+        answer = (
+            "This portfolio is powered by **7 core production REST & SSE API endpoints** built with **Django REST Framework**:\n\n"
+            "• **1. Project Catalog:** `GET /api/projects/` (Live PostgreSQL database with role & stack tags)\n"
+            "• **2. RAG Document Intelligence:** `POST /api/rag/stream/` & `POST /api/rag/ask/` (FAISS vector search & SSE token streaming)\n"
+            "• **3. AI Copilot Chat:** `POST /api/copilot/stream/` & `POST /api/copilot/chat/` (Interactive streaming copilot with voice ready)\n"
+            "• **4. Weather Microservice:** `GET /api/weather/?city={name}` (Open-Meteo proxy with city normalization & caching)\n"
+            "• **5. Contact Dispatch:** `POST /api/contact/` (Honeypot-protected form with DB storage & background Gmail SMTP)\n"
+            "• **6. System Health & DB Ping:** `GET /api/health/` (PostgreSQL live connection & engine stats)\n"
+            "• **7. Edge Latency Benchmarks:** `GET /api/status/` (Roundtrip latency metrics)\n\n"
+            "All endpoints enforce scoped rate limits (`5` to `30 req/min`) and CORS origin whitelisting."
+        )
+        suggestions = ['What are the API rate limits?', 'How does the RAG pipeline work?', 'What is his tech stack?']
+        return answer, suggestions
+
+    # 2. Rate Limits specifically
+    if any(k in q for k in ['rate limit', 'rate-limit', 'ratelimit', 'throttle', 'throttling', 'quota']):
+        answer = (
+            "**API Rate Limiting & Protection Policies**:\n\n"
+            "To safeguard production resources on Render and prevent abuse, all APIs enforce scoped rate limits via Django REST Framework:\n\n"
+            "• **Contact Endpoint (`/api/contact/`):** `5/minute` (prevents spam flooding and protects email quota).\n"
+            "• **Weather Endpoint (`/api/weather/`):** `30/minute` (prevents rate violations against Open-Meteo).\n"
+            "• **RAG Intelligence (`/api/rag/stream/`):** `30/minute` (protects CPU & memory during dense vector retrieval).\n"
+            "• **AI Copilot (`/api/copilot/stream/`):** `30/minute` (protects LLM streaming tokens).\n"
+            "• **General Endpoints:** `60/minute` (standard IP-scoped throttling).\n\n"
+            "Sensitive endpoints also include bot honeypots and CORS origin whitelisting (`mrask-frontend.vercel.app`)."
+        )
+        suggestions = ['What APIs are used in this project?', 'How does the RAG pipeline work?', 'How do I contact Siva?']
+        return answer, suggestions
+
+    # 3. Interactive & Customer Inquiries
+    if any(k in q for k in ['interactive', 'customer', 'visitor', 'recruiter', 'how do you work', 'what can you do', 'capabilities']):
+        answer = (
+            "**Yes! I am Mr.A.S.K's interactive AI Copilot**, designed to interactively assist recruiters, clients, and technical visitors in real time.\n\n"
+            "Here is what I can do interactively:\n"
+            "• **Real-Time Streaming:** I stream grounded answers token-by-token using Server-Sent Events (SSE).\n"
+            "• **Voice Copilot Mode:** Click **🔊 Voice ON** to have me speak my answers aloud with speech synthesis, accompanied by an animated audio visualizer.\n"
+            "• **Interactive Follow-ups:** I suggest contextual question pills after every response so you can explore Siva's experience intuitively.\n"
+            "• **Deep System Knowledge:** I can answer questions about Siva's 2+ years at Tata Communications, SevOne NMS & Assure1 network automations, MySQL → PostgreSQL migrations, RAG FAISS vector architecture, and live API rate limits.\n\n"
+            "Feel free to ask me any question directly!"
+        )
+        suggestions = ['What are the APIs used in this project?', 'Tell me about his Tata Communications experience', 'How do I contact him?']
+        return answer, suggestions
+
+    # 4. Friendly Greetings
+    if q in ['hi', 'hello', 'hey', 'greetings', 'good morning', 'good evening', 'good afternoon', 'namaste', 'start'] or q.startswith('hi ') or q.startswith('hello '):
+        answer = (
+            f"Hello and welcome! 👋 I am **Mr.A.S.K's AI Portfolio Co-Pilot**.\n\n"
+            f"I am here to interactively guide you through **{COPILOT_PROFILE['name']}'s** 2+ years of software engineering experience at **MasterCom / Tata Communications**, his full-stack products, and his AI systems.\n\n"
+            "What would you like to know?\n"
+            "• His **full-stack tech stack & Python/Django APIs**\n"
+            "• His **SevOne NOC/SOC network automation & MySQL → PostgreSQL migration**\n"
+            "• How his **RAG Document Intelligence Studio** works\n"
+            f"• How to **schedule an interview or contact him**"
+        )
+        suggestions = ['What is his tech stack?', 'What APIs are used in this project?', 'Tell me about his Tata Communications work']
+        return answer, suggestions
+
+    # 5. Telecom NOC/SOC & Enterprise Automation
+    if any(k in q for k in ['sevone', 'assure1', 'disha', 'snmp', 'netflow', 'noc', 'soc', 'bgp', 'ospf', 'alarm', 'alarms', 'servicenow', 'incident']):
+        answer = (
+            f"At **MasterCom Technology Services** (Client: **Tata Communications Ltd**), **{COPILOT_PROFILE['name']}** engineered mission-critical telecom automation across global PoPs:\n\n"
+            "• **SevOne NMS & DISHA (Assure1) Automation:** Automated device discovery, threshold-based health heuristics, and log collection via Python, Perl & Shell scripts, **reducing manual operational effort by 35%**.\n"
+            "• **NOC/SOC Telemetry Correlation:** Correlated **5,000+ SNMP OIDs and NetFlow telemetry streams**, cutting incident detection times from 45 to 20 minutes under strict ServiceNow SLAs.\n"
+            "• **SOC Threat & Routing Mitigation:** Automated Python SSH runbooks for BGP Peer Flap, Interface Jitter, OSPF Area Flaps, and Volumetric DDoS Flowspec mitigation in under 4 seconds.\n"
+            "• **ServiceNow Integration:** Auto-dispatched structured P1/P2 incident tickets with full RCA diagnostic logs.\n\n"
+            "You can test his interactive Enterprise Simulator under `/project/sevone-automation`!"
+        )
+        suggestions = ['Tell me about the database migration', 'What APIs are used in this project?', 'How do I hire Siva?']
+        return answer, suggestions
+
+    # 6. Database Migration (MySQL -> PostgreSQL)
+    if any(k in q for k in ['mysql', 'postgresql', 'postgres', 'migration', 'dbeaver', 'database', 'sql']):
+        answer = (
+            f"**MySQL → PostgreSQL Telecom Database Migration**:\n\n"
+            f"Siva led the production migration of large-scale relational schemas from legacy MySQL to PostgreSQL for Tata Communications:\n\n"
+            "• **Join Optimization:** Rewrote heavy multi-table joins using optimized PostgreSQL indexing and Python/Perl hash maps, **cutting average query execution times by 2.5 seconds**.\n"
+            "• **API Caching:** Designed high-performance Python RESTful APIs with Redis/memory caching, **reducing database strain by 30%**.\n"
+            "• **Zero Data Loss:** Validated schemas and row consistency across millions of telecom records using DBeaver and automated verification scripts.\n\n"
+            "Explore the deep dive under `/project/telecom-db-migration`!"
+        )
+        suggestions = ['What is his full tech stack?', 'What APIs are used in this project?', 'How do I contact him?']
+        return answer, suggestions
+
+    # 7. Contact / Hire / Availability
     if any(k in q for k in ['contact', 'email', 'hire', 'reach', 'connect', 'linkedin', 'github', 'phone', 'call', 'message']):
         answer = (
             f"You can reach **{COPILOT_PROFILE['name']} ({COPILOT_PROFILE['handle']})** directly:\n\n"
@@ -705,7 +829,7 @@ def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
         suggestions = ['What is his tech stack?', 'Tell me about the RAG Chatbot', 'Show all projects']
         return answer, suggestions
 
-    # 2. Skills / Tech Stack
+    # 8. Skills / Tech Stack
     if any(k in q for k in ['skill', 'stack', 'tech', 'technolog', 'language', 'framework', 'python', 'django', 'react', 'frontend', 'backend']):
         answer = (
             f"**{COPILOT_PROFILE['name']}** specializes in end-to-end full-stack and AI development:\n\n"
@@ -717,7 +841,7 @@ def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
         suggestions = ['How does his RAG Chatbot work?', 'Explain the Weather App architecture', 'How do I contact him?']
         return answer, suggestions
 
-    # 3. RAG Chatbot Project
+    # 9. RAG Chatbot Project
     if any(k in q for k in ['rag', 'chatbot', 'ollama', 'faiss', 'pdf', 'document', 'vector', 'qwen', 'embed']):
         answer = (
             "**RAG Chatbot** is Siva's on-premise Retrieval-Augmented Generation project:\n\n"
@@ -731,19 +855,19 @@ def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
         suggestions = ['Tell me about the Weather App', 'What is his experience with Django?', 'How do I hire Siva?']
         return answer, suggestions
 
-    # 4. Weather App Project
+    # 10. Weather App Project
     if any(k in q for k in ['weather', 'meteo', 'forecast', 'api/weather']):
         answer = (
             "**Weather App** is a full-stack microservice demonstration:\n\n"
             "• **Backend API:** Custom Django REST service (`/api/weather/`) resolving geocoding coordinates and aggregating meteorological data from Open-Meteo.\n"
             "• **Frontend Client:** React Native Web interface with animated weather cards, temperature conversions, and 5-day forecasts.\n"
-            "• **Resilience:** Features intelligent city normalization, rate limiting, and cached weather code descriptions.\n\n"
+            "• **Resilience:** Features intelligent city normalization, rate limiting (30 req/min), and cached weather code descriptions.\n\n"
             "You can test it live under `/project/weather-app`!"
         )
         suggestions = ['How does the RAG Chatbot work?', 'What is his full tech stack?', 'How do I contact him?']
         return answer, suggestions
 
-    # 5. Experience / Summary / Who is he
+    # 11. Experience / Summary / Who is he
     if any(k in q for k in ['who', 'about', 'experience', 'background', 'intro', 'summary', 'bio', 'resume', 'cv']):
         answer = (
             f"**{COPILOT_PROFILE['name']} ({COPILOT_PROFILE['handle']})** is an **Associate Software Engineer** with **2+ years of experience** at **MasterCom Technology Services** (Client: **Tata Communications Ltd**).\n\n"
@@ -763,10 +887,11 @@ def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
         f"engineering background, tech stack, projects, and availability.\n\n"
         "Feel free to ask about:\n"
         "• His **Python / Django** and **React Native** projects\n"
+        "• What **APIs and rate limits** power this portfolio\n"
         "• How his **RAG Chatbot** and **FAISS vector pipeline** work\n"
         f"• How to **schedule an interview or contact him** at {COPILOT_PROFILE['email']}"
     )
-    suggestions = ['What is his tech stack?', 'Tell me about the RAG Chatbot', 'How do I contact him?']
+    suggestions = ['What are the APIs used in this project?', 'What is his tech stack?', 'How do I contact him?']
     return answer, suggestions
 
 
