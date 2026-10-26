@@ -137,7 +137,7 @@ EMAIL_HOST_USER = (
     or os.environ.get('CONTACT_EMAIL_TO', '').strip()
     or 'sivakumarannam143@gmail.com'
 )
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '').strip()
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '').strip() or EMAIL_HOST_USER
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 

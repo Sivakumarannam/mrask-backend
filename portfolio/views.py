@@ -302,30 +302,79 @@ class ProjectDetail(generics.RetrieveAPIView):
 def _do_send_email(instance):
     """Internal: performs the actual SMTP call — runs in a background thread."""
     recipient = os.environ.get('CONTACT_EMAIL_TO', 'sivakumarannam143@gmail.com').strip()
-    from_email = (
-        os.environ.get('DEFAULT_FROM_EMAIL', '').strip()
-        or os.environ.get('EMAIL_HOST_USER', '').strip()
+    smtp_account = (
+        os.environ.get('EMAIL_HOST_USER', '').strip()
+        or os.environ.get('DEFAULT_FROM_EMAIL', '').strip()
         or recipient
         or 'sivakumarannam143@gmail.com'
     )
-    subject = f'New portfolio message from {instance.name}'
-    body = (
-        f'Name: {instance.name}\n'
-        f'Email: {instance.email}\n\n'
-        'Message:\n'
-        f'{instance.message}'
+    # Format with display name
+    from_email = f'"{instance.name} (Portfolio)" <{smtp_account}>'
+
+    # Anti-threading unique subject: includes timestamp and inquiry number so Gmail never merges it into old threads
+    now_str = datetime.now(timezone.utc).strftime('%d %b %Y, %I:%M %p UTC')
+    subject = f'🚨 [Inquiry #{instance.pk}] New Portfolio Message from {instance.name} ({now_str})'
+
+    plain_body = (
+        f"====================================================\n"
+        f"NEW INQUIRY #{instance.pk} RECEIVED FROM PORTFOLIO\n"
+        f"====================================================\n"
+        f"Name:    {instance.name}\n"
+        f"Email:   {instance.email}\n"
+        f"Date:    {now_str}\n\n"
+        f"Message:\n"
+        f"{instance.message}\n"
+        f"====================================================\n"
+        f"Click reply in your mail app to email {instance.email} directly.\n"
     )
+
+    html_body = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f19; color: #e2e8f0; margin: 0; padding: 24px;">
+  <div style="max-width: 600px; margin: 0 auto; background: #111827; border: 1px solid #3b82f6; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+    <div style="background: linear-gradient(135deg, #1e3a8a, #2563eb); padding: 18px 24px;">
+      <h2 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800;">🚀 New Portfolio Message Received</h2>
+      <p style="margin: 4px 0 0 0; color: #bfdbfe; font-size: 13px;">Inquiry #{instance.pk} • Delivered via Gmail SMTP</p>
+    </div>
+    <div style="padding: 24px;">
+      <div style="background: #1f2937; border-radius: 8px; padding: 16px; margin-bottom: 20px; border-left: 4px solid #60a5fa;">
+        <p style="margin: 0 0 8px 0; font-size: 14px;"><strong style="color: #93c5fd;">Sender Name:</strong> <span style="color: #ffffff; font-weight: 700;">{instance.name}</span></p>
+        <p style="margin: 0 0 8px 0; font-size: 14px;"><strong style="color: #93c5fd;">Sender Email:</strong> <a href="mailto:{instance.email}" style="color: #38bdf8; text-decoration: underline;">{instance.email}</a></p>
+        <p style="margin: 0; font-size: 12px; color: #9ca3af;"><strong style="color: #93c5fd;">Received At:</strong> {now_str}</p>
+      </div>
+      
+      <h4 style="margin: 0 0 8px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Message:</h4>
+      <div style="background: #030712; border: 1px solid #374151; border-radius: 8px; padding: 16px; font-size: 15px; line-height: 1.6; color: #f3f4f6; white-space: pre-wrap;">{instance.message}</div>
+      
+      <div style="margin-top: 24px; text-align: center;">
+        <a href="mailto:{instance.email}?subject=Re:%20Portfolio%20Inquiry%20from%20{instance.name}" style="background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;">
+          ✉️ Reply to {instance.name} ({instance.email})
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>"""
+
     try:
         email = EmailMessage(
             subject=subject,
-            body=body,
+            body=html_body,
             from_email=from_email,
             to=[recipient],
             reply_to=[instance.email],
+            headers={
+                'X-Priority': '1',
+                'Priority': 'Urgent',
+                'Importance': 'High',
+                'X-MSMail-Priority': 'High',
+            },
         )
+        email.content_subtype = 'html'
         sent = email.send(fail_silently=False) == 1
         if sent:
-            logger.info('Email delivered for contact message %s to %s', instance.pk, recipient)
+            logger.info('Email delivered for contact message %s to %s with subject "%s"', instance.pk, recipient, subject)
         else:
             logger.warning('Email.send() returned 0 for contact message %s', instance.pk)
     except (BadHeaderError, OSError, smtplib.SMTPException) as exc:
@@ -374,7 +423,7 @@ class ContactCreate(generics.CreateAPIView):
             or os.environ.get('CONTACT_EMAIL_TO', '').strip()
             or 'sivakumarannam143@gmail.com'
         )
-        smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
+        smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '').strip()
         smtp_configured = bool(smtp_user and smtp_pass)
 
         if smtp_configured:
