@@ -87,10 +87,20 @@ def extract_text(file_obj):
             pages = []
             for page in reader.pages:
                 page_text = page.extract_text() or ''
-                pages.append(page_text)
-            return '\n'.join(pages)
+                # Strip raw PDF structural syntax if extracted
+                cleaned = re.sub(r'<<[\s\S]*?>>', ' ', page_text)
+                cleaned = re.sub(r'\b\d+\s+\d+\s+obj\b', ' ', cleaned)
+                cleaned = re.sub(r'/\w+', ' ', cleaned)
+                cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+                if cleaned:
+                    pages.append(cleaned)
+            extracted = '\n\n'.join(pages)
+            if extracted.strip():
+                return extracted
         except Exception:
-            return data.decode('utf-8', errors='replace')
+            pass
+        # Never fall back to decoding raw PDF binary objects
+        return ''
 
     if name.endswith('.txt'):
         return data.decode('utf-8', errors='replace')
