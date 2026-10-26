@@ -11,7 +11,7 @@ class Project(models.Model):
     slug = models.SlugField(unique=True)
     title = models.CharField(max_length=120)
     tagline = models.CharField(max_length=200)
-    role = models.CharField(max_length=60, default='Solo project')
+    role = models.CharField(max_length=150, default='Solo project')
     summary = models.TextField()
     highlights = models.JSONField(default=list, blank=True, help_text='List of strings')
     stack = models.JSONField(default=list, blank=True, help_text='List of strings')
