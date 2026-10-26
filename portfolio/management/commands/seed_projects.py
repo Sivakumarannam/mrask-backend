@@ -11,29 +11,59 @@ PROJECTS = [
         'summary': (
             'End-to-end automation of monitoring, reporting, and operational tasks on SevOne NMS, PMS, and DISHA (Assure1) '
             'for Tata Communications Ltd. Built Python and Perl automations that reduced manual operational effort by 35%, '
-            'engineered Flask REST APIs with caching, and led database migration from MySQL to PostgreSQL optimizing query '
+            'engineered Python REST APIs with caching, and led database migration from MySQL to PostgreSQL optimizing query '
             'execution by 2.5 seconds.'
         ),
         'highlights': [
             'Automated device discovery, backups, log cleanup, and metrics collection via Python, Perl & Shell scripts (cut effort by ~35%)',
             'Correlated 5,000+ SNMP metrics and NetFlow flows on SevOne dashboards, reducing incident detection time from 45 to 20 minutes',
             'Successfully migrated production database workloads from MySQL to PostgreSQL with join rewrites via Python/Perl and DBeaver',
-            'Engineered Flask RESTful APIs with caching and performance optimization, reducing database strain by 30%',
+            'Engineered Python RESTful APIs with caching and performance optimization, reducing database strain by 30%',
             'Provided L2/L3 support on Assure1 & Spotlight for real-time monitoring, incident troubleshooting, and RCA under strict SLAs in ServiceNow',
         ],
-        'stack': ['Python', 'Perl', 'Bash', 'Flask', 'MySQL', 'PostgreSQL', 'SevOne NMS', 'DISHA (Assure1)', 'SNMP', 'NetFlow', 'Linux', 'ServiceNow'],
+        'stack': ['Python', 'Perl', 'Bash', 'Django REST Framework', 'MySQL', 'PostgreSQL', 'SevOne NMS', 'DISHA (Assure1)', 'SNMP', 'NetFlow', 'Linux', 'ServiceNow'],
         'steps': [
             'Ingest SNMP & NetFlow telemetry',
             'Correlate 5,000+ metrics in SevOne NMS',
             'Trigger threshold alerts & incident logs',
             'Automated Python/Perl scripts execute discovery/cleanup',
-            'Flask REST API serves analytics dashboards',
+            'Python REST API serves analytics dashboards',
             'Sync tickets & SLA tracking via ServiceNow',
         ],
         'github_url': 'https://github.com/Sivakumarannam',
         'demo_url': '',
         'demo_kind': '',
         'order': 1,
+    },
+    {
+        'slug': 'telecom-db-migration',
+        'title': 'MySQL → PostgreSQL Telecom Database Migration',
+        'tagline': 'High-throughput database migration, join optimization & Python API caching',
+        'role': 'Associate Software Engineer (MasterCom / Client: Tata Communications Ltd)',
+        'summary': (
+            'Engineered and executed mission-critical database migration from legacy MySQL to PostgreSQL for Tata Communications telecom infrastructure. '
+            'Rewrote complex joins using Python and Perl hashes, optimized query execution times by 2.5 seconds, and designed Python RESTful APIs '
+            'with caching that cut database strain by 30%.'
+        ),
+        'highlights': [
+            'Successfully migrated large-scale relational schemas from MySQL to PostgreSQL with zero downtime or data loss',
+            'Optimized multi-table join logic and query structures, cutting average query execution time by 2.5s',
+            'Engineered Python RESTful APIs with caching and parameter validation, reducing database load by 30%',
+            'Authored automated Python and Perl validation scripts verifying data integrity across all migrated tables',
+        ],
+        'stack': ['Python', 'Perl', 'PostgreSQL', 'MySQL', 'SQL', 'DBeaver', 'Linux'],
+        'steps': [
+            'Schema analysis & data type mapping',
+            'Python/Perl automated extraction scripts',
+            'PostgreSQL schema creation & indexing',
+            'Complex join rewrites & benchmark testing',
+            'API caching layer implementation',
+            'Cutover validation & SLA signoff',
+        ],
+        'github_url': 'https://github.com/Sivakumarannam',
+        'demo_url': '',
+        'demo_kind': '',
+        'order': 2,
     },
     {
         'slug': 'rag-chatbot',
@@ -65,7 +95,7 @@ PROJECTS = [
         'github_url': 'https://github.com/Sivakumarannam/rag-chatbot-langchain-ollama',
         'demo_url': '',
         'demo_kind': 'rag',
-        'order': 2,
+        'order': 3,
     },
     {
         'slug': 'weather-app',
@@ -95,7 +125,7 @@ PROJECTS = [
         'github_url': 'https://github.com/Sivakumarannam/weather_API_Backup',
         'demo_url': '',
         'demo_kind': 'weather',
-        'order': 3,
+        'order': 4,
     },
     {
         'slug': 'gitops-platform',
@@ -125,7 +155,7 @@ PROJECTS = [
         'github_url': 'https://github.com/Sivakumarannam',
         'demo_url': '',
         'demo_kind': '',
-        'order': 4,
+        'order': 5,
     },
 ]
 

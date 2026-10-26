@@ -251,9 +251,36 @@ def answer_from_chunks(question, chunks, full_text=''):
 
 
 class ProjectList(generics.ListAPIView):
-    queryset = Project.objects.filter(is_published=True)
     serializer_class = ProjectSerializer
     pagination_class = None
+
+    def get_queryset(self):
+        qs = Project.objects.filter(is_published=True)
+        if qs.count() < 5:
+            try:
+                from .management.commands.seed_projects import PROJECTS
+                for item in PROJECTS:
+                    Project.objects.update_or_create(
+                        slug=item['slug'],
+                        defaults=dict(
+                            title=item['title'],
+                            tagline=item['tagline'],
+                            role=item['role'],
+                            summary=item['summary'],
+                            highlights=item['highlights'],
+                            stack=item['stack'],
+                            steps=item['steps'],
+                            github_url=item['github_url'],
+                            demo_url=item.get('demo_url', ''),
+                            demo_kind=item.get('demo_kind', ''),
+                            order=item.get('order', 0),
+                            is_published=True,
+                        ),
+                    )
+                qs = Project.objects.filter(is_published=True)
+            except Exception as e:
+                logger.warning('Auto-seed in ProjectList failed: %s', e)
+        return qs
 
 
 class ProjectDetail(generics.RetrieveAPIView):
@@ -625,7 +652,7 @@ COPILOT_PROFILE = {
 }
 
 COPILOT_KNOWLEDGE_BASE = """
-Siva Kumar Annam (Mr.A.S.K) is an Associate Software Engineer with 1.5+ years of hands-on experience at MasterCom Technology Services (Client: Tata Communications Ltd).
+Siva Kumar Annam (Mr.A.S.K) is an Associate Software Engineer with 2+ years of hands-on experience at MasterCom Technology Services (Client: Tata Communications Ltd).
 Contact:
 - Phone: +91 7032997668
 - Email: sivakumarannam143@gmail.com
@@ -634,17 +661,17 @@ Contact:
 - Portfolio: https://mrask-frontend.vercel.app
 
 Employment & Enterprise Experience:
-- Associate Software Engineer at MasterCom Technology Services India Pvt Ltd, Bangalore (Nov 2024 – Present, ~1.5 years).
+- Associate Software Engineer at MasterCom Technology Services India Pvt Ltd, Bangalore (Nov 2024 – Present, ~2 years).
 - Client: Tata Communications Ltd (Pune). Project: SevOne NMS & Service Assurance Automation.
 - Automated network operational tasks using Python, Perl, and Shell scripts, reducing manual operational effort by 35%.
-- Engineered Flask RESTful APIs with caching and query optimization, decreasing database strain by 30%.
+- Engineered Python RESTful APIs with caching and query optimization, decreasing database strain by 30%.
 - Performed MySQL to PostgreSQL database migrations, optimizing complex joins and reducing query execution time by 2.5s.
 - Correlated 5,000+ SNMP metrics and NetFlow flows on SevOne dashboards, cutting incident detection time from 45 to 20 minutes.
 - Supported Assure1 (DISHA) and Spotlight platforms for network troubleshooting, RCA, and ServiceNow SLA compliance.
 
 Technical Competencies:
 1. Programming & Scripting: Python (Strong), Perl, Bash, Shell Scripting, JavaScript, TypeScript, PL/SQL, SQL.
-2. Web & APIs: Flask, Django 6.1, Django REST Framework, REST API Design, React Native (Expo SDK 57), HTML5/CSS3.
+2. Web & APIs: Django 6.1, Django REST Framework, REST API Design, React Native (Expo SDK 57), HTML5/CSS3.
 3. AI & RAG: LangChain, Ollama (Qwen2.5/Llama3), Sentence-Transformers, FAISS vector store, PostgreSQL pgvector, real-time SSE streaming.
 4. Cloud & DevOps: AWS (EC2, S3, RDS, VPC, IAM, Lambda), Docker, Kubernetes, Terraform IaC, Ansible, GitHub Actions, Jenkins, Prometheus, Grafana.
 5. Monitoring: SevOne NMS, PMS, DISHA (Assure1), Spotlight, SNMP, NetFlow, ServiceNow.
@@ -709,11 +736,11 @@ def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
     # 5. Experience / Summary / Who is he
     if any(k in q for k in ['who', 'about', 'experience', 'background', 'intro', 'summary', 'bio', 'resume', 'cv']):
         answer = (
-            f"**{COPILOT_PROFILE['name']} ({COPILOT_PROFILE['handle']})** is an **Associate Software Engineer** with **1.5+ years of experience** at **MasterCom Technology Services** (Client: **Tata Communications Ltd**).\n\n"
+            f"**{COPILOT_PROFILE['name']} ({COPILOT_PROFILE['handle']})** is an **Associate Software Engineer** with **2+ years of experience** at **MasterCom Technology Services** (Client: **Tata Communications Ltd**).\n\n"
             "Key Highlights:\n"
             "• **Enterprise Automation:** Built Python, Perl, and Shell automations on SevOne NMS & DISHA (Assure1) that reduced manual operational effort by **35%**.\n"
             "• **Database Engineering:** Executed MySQL → PostgreSQL database migrations with custom join rewrites, cutting average query time by 2.5s.\n"
-            "• **Backend & APIs:** Developed Flask RESTful APIs with caching that decreased database strain by 30%.\n"
+            "• **Backend & APIs:** Developed Python RESTful APIs with caching that decreased database strain by 30%.\n"
             "• **Generative AI & RAG:** Built on-premise RAG pipelines using LangChain, Ollama (Qwen2.5/Llama3), and FAISS vector indexing.\n\n"
             f"He holds a B.Tech in CSE from St. Mary’s Group of Institutions and is actively **{COPILOT_PROFILE['open_to']}**."
         )
