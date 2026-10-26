@@ -301,11 +301,12 @@ class ProjectDetail(generics.RetrieveAPIView):
 
 def _do_send_email(instance):
     """Internal: performs the actual SMTP call — runs in a background thread."""
-    recipient = os.environ.get('CONTACT_EMAIL_TO', 'sivakumarannam143@gmail.com')
+    recipient = os.environ.get('CONTACT_EMAIL_TO', 'sivakumarannam143@gmail.com').strip()
     from_email = (
-        os.environ.get('DEFAULT_FROM_EMAIL')
-        or os.environ.get('EMAIL_HOST_USER')
-        or 'noreply@example.com'
+        os.environ.get('DEFAULT_FROM_EMAIL', '').strip()
+        or os.environ.get('EMAIL_HOST_USER', '').strip()
+        or recipient
+        or 'sivakumarannam143@gmail.com'
     )
     subject = f'New portfolio message from {instance.name}'
     body = (
@@ -324,11 +325,11 @@ def _do_send_email(instance):
         )
         sent = email.send(fail_silently=False) == 1
         if sent:
-            logger.info('Email delivered for contact message %s', instance.pk)
+            logger.info('Email delivered for contact message %s to %s', instance.pk, recipient)
         else:
             logger.warning('Email.send() returned 0 for contact message %s', instance.pk)
-    except (BadHeaderError, OSError, smtplib.SMTPException):
-        logger.exception('Async email delivery failed for contact message %s', instance.pk)
+    except (BadHeaderError, OSError, smtplib.SMTPException) as exc:
+        logger.exception('Async email delivery failed for contact message %s: %s', instance.pk, exc)
 
 
 def send_contact_email_async(instance):
@@ -367,7 +368,12 @@ class ContactCreate(generics.CreateAPIView):
         instance = serializer.save()
 
         # Check if Gmail SMTP credentials are configured on Render
-        smtp_user = os.environ.get('EMAIL_HOST_USER', '').strip()
+        smtp_user = (
+            os.environ.get('EMAIL_HOST_USER', '').strip()
+            or os.environ.get('DEFAULT_FROM_EMAIL', '').strip()
+            or os.environ.get('CONTACT_EMAIL_TO', '').strip()
+            or 'sivakumarannam143@gmail.com'
+        )
         smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
         smtp_configured = bool(smtp_user and smtp_pass)
 
