@@ -610,33 +610,45 @@ class APIDocsView(APIView):
 COPILOT_PROFILE = {
     'name': 'Siva Kumar Annam',
     'handle': 'Mr.A.S.K',
-    'title': 'Full-Stack Developer & AI Systems Engineer',
-    'location': 'Andhra Pradesh, India',
+    'title': 'Python Developer & Automation Engineer',
+    'phone': '+91 7032997668',
+    'location': 'Bangalore / Andhra Pradesh, India',
     'email': 'sivakumarannam143@gmail.com',
     'github': 'https://github.com/Sivakumarannam',
     'linkedin': 'https://www.linkedin.com/in/siva-kumar-annam-5b0368203/',
     'portfolio': 'https://mrask-frontend.vercel.app',
-    'open_to': 'Open to full-stack, Python/Django, React Native, and AI engineer opportunities',
+    'company': 'MasterCom Technology Services India Pvt Ltd, Bangalore',
+    'client': 'Tata Communications Ltd (Pune)',
+    'role': 'Associate Software Engineer | Automation & Platform Engineer',
+    'experience': '1.5+ years',
+    'open_to': 'Open to Python Developer, DevOps/Cloud, and Full-Stack AI engineering opportunities',
 }
 
 COPILOT_KNOWLEDGE_BASE = """
-Siva Kumar Annam (Mr.A.S.K) is a Full-Stack Developer and AI Systems Engineer from Andhra Pradesh, India.
+Siva Kumar Annam (Mr.A.S.K) is an Associate Software Engineer with 1.5+ years of hands-on experience at MasterCom Technology Services (Client: Tata Communications Ltd).
 Contact:
+- Phone: +91 7032997668
 - Email: sivakumarannam143@gmail.com
 - GitHub: https://github.com/Sivakumarannam
 - LinkedIn: https://www.linkedin.com/in/siva-kumar-annam-5b0368203/
 - Portfolio: https://mrask-frontend.vercel.app
 
-Technical Competencies:
-1. Frontend: React Native (Expo SDK 57), React Native Web, TypeScript, JavaScript (ES6+), HTML5, CSS3, Bootstrap, glassmorphic dark/light UI, persistent local theming.
-2. Backend: Python, Django 6.1, Django REST Framework, PostgreSQL with pgvector, SQLite, Gunicorn, WhiteNoise, REST APIs, asynchronous daemon email threads (<170ms response).
-3. AI / LLM & RAG: Retrieval-Augmented Generation (RAG), Ollama (Qwen2.5 local inference), Sentence-Transformers (all-MiniLM-L6-v2), FAISS dense vector search, pgvector cosine similarity, real-time Server-Sent Events (SSE) token streaming, PyPDF semantic chunking.
-4. DevOps: Docker containerization, Render Cloud, Vercel, GitHub Actions CI/CD automation.
+Employment & Enterprise Experience:
+- Associate Software Engineer at MasterCom Technology Services India Pvt Ltd, Bangalore (Nov 2024 – Present, ~1.5 years).
+- Client: Tata Communications Ltd (Pune). Project: SevOne NMS & Service Assurance Automation.
+- Automated network operational tasks using Python, Perl, and Shell scripts, reducing manual operational effort by 35%.
+- Engineered Flask RESTful APIs with caching and query optimization, decreasing database strain by 30%.
+- Performed MySQL to PostgreSQL database migrations, optimizing complex joins and reducing query execution time by 2.5s.
+- Correlated 5,000+ SNMP metrics and NetFlow flows on SevOne dashboards, cutting incident detection time from 45 to 20 minutes.
+- Supported Assure1 (DISHA) and Spotlight platforms for network troubleshooting, RCA, and ServiceNow SLA compliance.
 
-Core Projects:
-1. RAG Chatbot: Local on-premise document Q&A assistant using Sentence-Transformers, FAISS vector indexing, and local Ollama Qwen2.5. Guarantees 100% data privacy with zero cloud leak.
-2. Weather App: Microservice architecture connecting Django REST backend to Open-Meteo geocoding and live 5-day forecasts, rendered across Web, Android, and iOS.
-3. Portfolio Expo: Full-stack portfolio application with dark/light themes, honeypot spam protection, instant async email delivery, and automated testing.
+Technical Competencies:
+1. Programming & Scripting: Python (Strong), Perl, Bash, Shell Scripting, JavaScript, TypeScript, PL/SQL, SQL.
+2. Web & APIs: Flask, Django 6.1, Django REST Framework, REST API Design, React Native (Expo SDK 57), HTML5/CSS3.
+3. AI & RAG: LangChain, Ollama (Qwen2.5/Llama3), Sentence-Transformers, FAISS vector store, PostgreSQL pgvector, real-time SSE streaming.
+4. Cloud & DevOps: AWS (EC2, S3, RDS, VPC, IAM, Lambda), Docker, Kubernetes, Terraform IaC, Ansible, GitHub Actions, Jenkins, Prometheus, Grafana.
+5. Monitoring: SevOne NMS, PMS, DISHA (Assure1), Spotlight, SNMP, NetFlow, ServiceNow.
+6. Education: B.Tech in Computer Science and Engineering from St. Mary’s Group of Institutions, Guntur, AP (2019 – 2023).
 """
 
 def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
@@ -697,13 +709,15 @@ def generate_copilot_answer(message: str) -> tuple[str, list[str]]:
     # 5. Experience / Summary / Who is he
     if any(k in q for k in ['who', 'about', 'experience', 'background', 'intro', 'summary', 'bio', 'resume', 'cv']):
         answer = (
-            f"**{COPILOT_PROFILE['name']} ({COPILOT_PROFILE['handle']})** is a Full-Stack Developer and AI Systems Engineer based in {COPILOT_PROFILE['location']}.\n\n"
-            "He designs, builds, and deploys scalable web applications, mobile interfaces, and AI microservices independently. "
-            "His flagship works include an on-premise RAG system powered by local Ollama & FAISS, a real-time weather microservice, "
-            "and this production multi-platform Expo portfolio.\n\n"
-            f"He is currently **{COPILOT_PROFILE['open_to']}**."
+            f"**{COPILOT_PROFILE['name']} ({COPILOT_PROFILE['handle']})** is an **Associate Software Engineer** with **1.5+ years of experience** at **MasterCom Technology Services** (Client: **Tata Communications Ltd**).\n\n"
+            "Key Highlights:\n"
+            "• **Enterprise Automation:** Built Python, Perl, and Shell automations on SevOne NMS & DISHA (Assure1) that reduced manual operational effort by **35%**.\n"
+            "• **Database Engineering:** Executed MySQL → PostgreSQL database migrations with custom join rewrites, cutting average query time by 2.5s.\n"
+            "• **Backend & APIs:** Developed Flask RESTful APIs with caching that decreased database strain by 30%.\n"
+            "• **Generative AI & RAG:** Built on-premise RAG pipelines using LangChain, Ollama (Qwen2.5/Llama3), and FAISS vector indexing.\n\n"
+            f"He holds a B.Tech in CSE from St. Mary’s Group of Institutions and is actively **{COPILOT_PROFILE['open_to']}**."
         )
-        suggestions = ['What are his top skills?', 'Tell me about the RAG Chatbot', 'Get his contact info']
+        suggestions = ['What are his top skills?', 'Tell me about the SevOne NMS project', 'Get his contact info']
         return answer, suggestions
 
     # Default / Generic
